@@ -19,11 +19,14 @@
 
 # Import necessary libraries.
 import atexit
+import datetime
 # You need to install evdev with a package manager or pip3.
 import evdev  # (sudo pip3 install evdev)
 
 # set keyboard to look for. Available options: 'akko', 'thinkpad'
 wanted_keyboard = 'thinkpad'
+# space hotkey layout timeout for autodisabling in seconds
+space_key_timeout = 3
 
 
 # Define an example dictionary describing the remaps.
@@ -168,8 +171,9 @@ kbd.grab()  # Grab, i.e. prevent the keyboard from emitting original events.
 
 
 soloing_spc = False  # A flag needed for CapsLock example later.
-pressed_spc = False
+spc_layout = False
 pressed_shift = False
+space_key_timestamp = datetime.datetime.now()  # timestamp for space hotkey for autodisabling space layout in some time
 
 # Create a new keyboard mimicking the original one.
 with evdev.UInput.from_device(kbd, name='kbdremap') as ui:
@@ -197,16 +201,25 @@ with evdev.UInput.from_device(kbd, name='kbdremap') as ui:
                 # always send it because key can stuck if shift key released first
                 ui.write(evdev.ecodes.EV_KEY, SHIFT_KEYS[ev.code], 0)
             # if space was pressed in previous time
-            elif (pressed_spc and ev.code in SPACE_KEYS):
-                # make space hotkey
-                ui.write(evdev.ecodes.EV_KEY, SPACE_KEYS[ev.code], ev.value)
-                # always send it because key can stuck if space key released first
-                ui.write(evdev.ecodes.EV_KEY, SPACE_KEYS[ev.code], 0)
+            elif (spc_layout and ev.code in SPACE_KEYS):
+                time_difference = datetime.datetime.now() - space_key_timestamp
+                # if time difference between now and entering space layout is less needed timeout
+                if (time_difference.total_seconds() < space_key_timeout):
+                    # make space hotkey
+                    ui.write(evdev.ecodes.EV_KEY, SPACE_KEYS[ev.code], ev.value)
+                    # update timer
+                    space_key_timestamp = datetime.datetime.now()
+                else:
+                    # else disable space layout and send default key
+                    ui.write(ev.type, ev.code, ev.value)
+                    spc_layout = False
             elif ev.code == evdev.ecodes.KEY_SPACE:
                 if (ev.value > 0):
-                    pressed_spc = True
-                else:
-                    pressed_spc = False
+                    if spc_layout == True:
+                        spc_layout = False
+                    else:
+                        spc_layout = True
+                        space_key_timestamp = datetime.datetime.now()
             else:
                 # Passthrough other events unmodified (e.g. SYNs).
                 ui.write(ev.type, ev.code, ev.value)
