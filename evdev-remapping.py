@@ -25,14 +25,17 @@ import evdev  # (sudo pip3 install evdev)
 
 # set keyboard to look for. Available options: 'akko', 'thinkpad'
 wanted_keyboard = 'thinkpad'
-# space hotkey layout timeout for autodisabling in seconds
+# space layout timeout for autodisabling in second
 space_key_timeout = 3
+# meta layout timeout for autodisabling in seconds
+meta_key_timeout  = 3
 
 
 # Define an example dictionary describing the remaps.
 REMAP_TABLE = {}
 SPACE_KEYS  = {}
 SHIFT_KEYS  = {}
+META_KEYS   = {}
 
 if wanted_keyboard == 'akko':
     REMAP_TABLE = {
@@ -92,6 +95,15 @@ if wanted_keyboard == 'akko':
     SHIFT_KEYS = {
         # force space key for shift hotkey (Shift+Space)
         evdev.ecodes.KEY_SPACE: evdev.ecodes.KEY_SPACE,
+    }
+
+    # mapping for meta hotkeys (Meta+Key, etc...)
+    META_KEYS = {
+        # WASD to arrow keys
+        evdev.ecodes.KEY_W: evdev.ecodes.KEY_UP,
+        evdev.ecodes.KEY_A: evdev.ecodes.KEY_LEFT,
+        evdev.ecodes.KEY_S: evdev.ecodes.KEY_DOWN,
+        evdev.ecodes.KEY_D: evdev.ecodes.KEY_RIGHT,
     }
 elif wanted_keyboard == 'thinkpad':
     REMAP_TABLE = {
@@ -153,6 +165,15 @@ elif wanted_keyboard == 'thinkpad':
         evdev.ecodes.KEY_SPACE: evdev.ecodes.KEY_SPACE,
     }
 
+    # mapping for meta hotkeys (Meta+Key, etc...)
+    META_KEYS = {
+        # WASD to arrow keys
+        evdev.ecodes.KEY_W: evdev.ecodes.KEY_UP,
+        evdev.ecodes.KEY_A: evdev.ecodes.KEY_LEFT,
+        evdev.ecodes.KEY_S: evdev.ecodes.KEY_DOWN,
+        evdev.ecodes.KEY_D: evdev.ecodes.KEY_RIGHT,
+    }
+
 # The names can be found with evtest or in evdev docs.
 
 # The keyboard name we will intercept the events for. Obtainable with evtest.
@@ -170,10 +191,13 @@ atexit.register(kbd.ungrab)  # Don't forget to ungrab the keyboard on exit!
 kbd.grab()  # Grab, i.e. prevent the keyboard from emitting original events.
 
 
-soloing_spc = False  # A flag needed for CapsLock example later.
-spc_layout = False
+soloing_spc   = False  # A flag needed for CapsLock example later.
+spc_layout    = False
 pressed_shift = False
+meta_layout   = False
+
 space_key_timestamp = datetime.datetime.now()  # timestamp for space hotkey for autodisabling space layout in some time
+meta_key_timestamp  = datetime.datetime.now()  # timestamp for meta hotkey for autodisabling meta layout in some time
 
 # Create a new keyboard mimicking the original one.
 with evdev.UInput.from_device(kbd, name='kbdremap') as ui:
@@ -189,6 +213,8 @@ with evdev.UInput.from_device(kbd, name='kbdremap') as ui:
                 # Useful if that is your only keyboard. =)
                 # Also if you bind that script to PAUSE, it'll be a toggle.
                 break
+            elif (meta_layout and ev.code == evdev.ecodes.KEY_TAB):
+                meta_layout = False
             elif ev.code in REMAP_TABLE:
                 # Lookup the key we want to press/release instead...
                 remapped_code = REMAP_TABLE[ev.code]
@@ -213,6 +239,20 @@ with evdev.UInput.from_device(kbd, name='kbdremap') as ui:
                     # else disable space layout and send default key
                     ui.write(ev.type, ev.code, ev.value)
                     spc_layout = False
+            elif (meta_layout and ev.code in META_KEYS):
+                time_difference = datetime.datetime.now() - meta_key_timestamp
+                # if time difference between now and entering meta layout is less needed timeout
+                if (time_difference.total_seconds() < meta_key_timeout):
+                    # make meta hotkey
+                    ui.write(evdev.ecodes.EV_KEY, META_KEYS[ev.code], ev.value)
+                    # update timer
+                    meta_key_timestamp = datetime.datetime.now()
+                else:
+                    # else disable meta layout and send default key
+                    ui.write(ev.type, ev.code, ev.value)
+                    meta_layout = False
+            # space layout works like a chord: if space key pressed and released,
+            # layout activates, if pressed again, deactivates
             elif ev.code == evdev.ecodes.KEY_SPACE:
                 if (ev.value > 0):
                     if spc_layout == True:
@@ -220,6 +260,9 @@ with evdev.UInput.from_device(kbd, name='kbdremap') as ui:
                     else:
                         spc_layout = True
                         space_key_timestamp = datetime.datetime.now()
+
+                        pressed_shift = False
+                        meta_layout   = False
             else:
                 # Passthrough other events unmodified (e.g. SYNs).
                 ui.write(ev.type, ev.code, ev.value)
@@ -232,3 +275,16 @@ with evdev.UInput.from_device(kbd, name='kbdremap') as ui:
         else:
             # Passthrough other events unmodified (e.g. SYNs).
             ui.write(ev.type, ev.code, ev.value)
+
+        # meta layout works like a chord: if meta key pressed and released,
+        # layout activates, if pressed again or pressed escape, deactivates
+        if ev.code == evdev.ecodes.KEY_LEFTCTRL:
+            if (ev.value > 0):
+                if meta_layout == True:
+                    meta_layout = False
+                else:
+                    meta_layout = True
+                    meta_key_timestamp = datetime.datetime.now()
+
+                    pressed_shift = False
+                    spc_layout    = False
