@@ -45,7 +45,7 @@ if wanted_keyboard == 'akko':
         evdev.ecodes.KEY_ESC: evdev.ecodes.KEY_GRAVE,
         evdev.ecodes.KEY_GRAVE: evdev.ecodes.KEY_TAB,
         #evdev.ecodes.KEY_SPACE: evdev.ecodes.KEY_MAIL,
-        evdev.ecodes.KEY_LEFTMETA: evdev.ecodes.KEY_LEFTCTRL,
+        #evdev.ecodes.KEY_LEFTMETA: evdev.ecodes.KEY_LEFTCTRL,
         evdev.ecodes.KEY_LEFTCTRL: evdev.ecodes.KEY_LEFTMETA,
         evdev.ecodes.KEY_1: evdev.ecodes.KEY_STOP,
         evdev.ecodes.KEY_2: evdev.ecodes.KEY_STOP,
@@ -192,8 +192,9 @@ kbd.grab()  # Grab, i.e. prevent the keyboard from emitting original events.
 
 
 soloing_spc   = False  # A flag needed for CapsLock example later.
-spc_layout    = False
+pressed_ctrl  = False
 pressed_shift = False
+spc_layout    = False
 meta_layout   = False
 
 space_key_timestamp = datetime.datetime.now()  # timestamp for space hotkey for autodisabling space layout in some time
@@ -201,12 +202,17 @@ meta_key_timestamp  = datetime.datetime.now()  # timestamp for meta hotkey for a
 
 # Create a new keyboard mimicking the original one.
 with evdev.UInput.from_device(kbd, name='kbdremap') as ui:
+    remapped_code = False
     for ev in kbd.read_loop():  # Read events from original keyboard.
         if ev.type == evdev.ecodes.EV_KEY:  # Process key events.
             # If we just pressed (or held) CapsLock, remember it.
             # Other keys will reset this flag.
             # Also, remap a 'solo CapsLock' into an Escape as promised.
             soloing_spc = (ev.code == evdev.ecodes.KEY_SPACE and ev.value)
+
+            # opening Ctrl+Key hotkey for chord
+            if (pressed_ctrl and ev.value == 1 and ev.code != evdev.ecodes.KEY_LEFTMETA):
+                ui.write(evdev.ecodes.EV_KEY, evdev.ecodes.KEY_LEFTCTRL, 1)
 
             if ev.code == evdev.ecodes.KEY_PAUSE and ev.value == 1:
                 # Exit on pressing PAUSE.
@@ -272,9 +278,22 @@ with evdev.UInput.from_device(kbd, name='kbdremap') as ui:
                     pressed_shift = True
                 else:
                     pressed_shift = False
+
+            # closing Ctrl+Key hotkey for chord
+            if (pressed_ctrl and ev.value == 0 and ev.code != evdev.ecodes.KEY_LEFTMETA):
+                ui.write(evdev.ecodes.EV_KEY, evdev.ecodes.KEY_LEFTCTRL, 0)
+                pressed_ctrl = False
+
+            if ev.code == evdev.ecodes.KEY_LEFTMETA and ev.value == 1:
+                if pressed_ctrl == False:
+                    pressed_ctrl = True
+                else:
+                    pressed_ctrl = False
         else:
             # Passthrough other events unmodified (e.g. SYNs).
             ui.write(ev.type, ev.code, ev.value)
+
+
 
         # meta layout works like a chord: if meta key pressed and released,
         # layout activates, if pressed again or pressed escape, deactivates
