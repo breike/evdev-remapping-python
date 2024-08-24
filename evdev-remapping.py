@@ -227,11 +227,11 @@ with evdev.UInput.from_device(kbd, name='kbdremap') as ui:
                 # And do it.
                 ui.write(evdev.ecodes.EV_KEY, remapped_code, ev.value)
             # if shift was pressed in previous time
-            elif (pressed_shift and ev.code in SHIFT_KEYS):
-                # make shift hotkey
-                ui.write(evdev.ecodes.EV_KEY, SHIFT_KEYS[ev.code], ev.value)
-                # always send it because key can stuck if shift key released first
-                ui.write(evdev.ecodes.EV_KEY, SHIFT_KEYS[ev.code], 0)
+            #elif (pressed_shift and ev.code in SHIFT_KEYS):
+            #    # make shift hotkey
+            #    ui.write(evdev.ecodes.EV_KEY, SHIFT_KEYS[ev.code], ev.value)
+            #    # always send it because key can stuck if shift key released first
+            #    ui.write(evdev.ecodes.EV_KEY, SHIFT_KEYS[ev.code], 0)
             # if space was pressed in previous time
             elif (spc_layout and ev.code in SPACE_KEYS):
                 time_difference = datetime.datetime.now() - space_key_timestamp
@@ -259,7 +259,7 @@ with evdev.UInput.from_device(kbd, name='kbdremap') as ui:
                     meta_layout = False
             # space layout works like a chord: if space key pressed and released,
             # layout activates, if pressed again, deactivates
-            elif ev.code == evdev.ecodes.KEY_SPACE:
+            elif ev.code == evdev.ecodes.KEY_SPACE and pressed_shift:
                 if (ev.value > 0):
                     if spc_layout == True:
                         spc_layout = False
