@@ -151,11 +151,11 @@ if wanted_keyboard == 'akko':
 
     # mapping for meta hotkeys (Meta+Key, etc...)
     META_KEYS = {
-        # WASD to arrow keys
-        evdev.ecodes.KEY_W: evdev.ecodes.KEY_UP,
-        evdev.ecodes.KEY_A: evdev.ecodes.KEY_LEFT,
-        evdev.ecodes.KEY_S: evdev.ecodes.KEY_DOWN,
-        evdev.ecodes.KEY_D: evdev.ecodes.KEY_RIGHT,
+        # ESDF to arrow keys (as WASD)
+        evdev.ecodes.KEY_E: evdev.ecodes.KEY_UP,
+        evdev.ecodes.KEY_F: evdev.ecodes.KEY_LEFT,
+        evdev.ecodes.KEY_D: evdev.ecodes.KEY_DOWN,
+        evdev.ecodes.KEY_S: evdev.ecodes.KEY_RIGHT,
     }
 elif wanted_keyboard == 'thinkpad':
     REMAP_TABLE = {
@@ -266,11 +266,11 @@ elif wanted_keyboard == 'thinkpad':
 
     # mapping for meta hotkeys (Meta+Key, etc...)
     META_KEYS = {
-        # WASD to arrow keys
-        evdev.ecodes.KEY_W: evdev.ecodes.KEY_UP,
-        evdev.ecodes.KEY_A: evdev.ecodes.KEY_LEFT,
-        evdev.ecodes.KEY_S: evdev.ecodes.KEY_DOWN,
-        evdev.ecodes.KEY_D: evdev.ecodes.KEY_RIGHT,
+        # ESDF to arrow keys (as WASD)
+        evdev.ecodes.KEY_E: evdev.ecodes.KEY_UP,
+        evdev.ecodes.KEY_F: evdev.ecodes.KEY_LEFT,
+        evdev.ecodes.KEY_D: evdev.ecodes.KEY_DOWN,
+        evdev.ecodes.KEY_S: evdev.ecodes.KEY_RIGHT,
     }
 
 # The names can be found with evtest or in evdev docs.
