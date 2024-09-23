@@ -40,6 +40,17 @@ SPACE_KEYS      = {}
 SHIFT_KEYS      = {}
 META_KEYS       = {}
 
+def send_layout_change_signal(signal):
+    if wanted_keyboard == 'thinkpad':
+        f = open("/sys/class/leds/tpacpi::thinklight/brightness", "w")
+        if signal == "on":
+            f.write("1")
+        else:
+            f.write("0")
+        f.close()
+    else:
+        pass
+
 if wanted_keyboard == 'akko':
     REMAP_TABLE = {
         # Let's swap A and B...
