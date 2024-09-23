@@ -334,6 +334,7 @@ with evdev.UInput.from_device(kbd, name='kbdremap') as ui:
             elif (ev.code == evdev.ecodes.KEY_TAB) and (spc_layout or meta_layout):
                 spc_layout = False
                 meta_layout = False
+                send_layout_change_signal("off")
             elif ev.code in REMAP_TABLE:
                 # Lookup the key we want to press/release instead...
                 remapped_code = REMAP_TABLE[ev.code]
@@ -354,10 +355,12 @@ with evdev.UInput.from_device(kbd, name='kbdremap') as ui:
                     ui.write(evdev.ecodes.EV_KEY, SPACE_KEYS[ev.code], ev.value)
                     # update timer
                     space_key_timestamp = datetime.datetime.now()
+                    send_layout_change_signal("on")
                 else:
                     # else disable space layout and send default key
                     ui.write(ev.type, ev.code, ev.value)
                     spc_layout = False
+                    send_layout_change_signal("off")
             elif (meta_layout and ev.code in META_KEYS):
                 time_difference = datetime.datetime.now() - meta_key_timestamp
                 # if time difference between now and entering meta layout is less needed timeout
@@ -370,15 +373,18 @@ with evdev.UInput.from_device(kbd, name='kbdremap') as ui:
                     # else disable meta layout and send default key
                     ui.write(ev.type, ev.code, ev.value)
                     meta_layout = False
+                    send_layout_change_signal("off")
             # space layout works like a chord: if space key pressed and released,
             # layout activates, if pressed again, deactivates
             elif ev.code == evdev.ecodes.KEY_SPACE and pressed_shift:
                 if (ev.value > 0):
                     if spc_layout == True:
                         spc_layout = False
+                        send_layout_change_signal("off")
                     else:
                         spc_layout = True
                         space_key_timestamp = datetime.datetime.now()
+                        send_layout_change_signal("on")
 
                         pressed_shift = False
                         meta_layout   = False
@@ -420,9 +426,11 @@ with evdev.UInput.from_device(kbd, name='kbdremap') as ui:
                 if meta_layout == True:
                     meta_layout = False
                     print("meta_layout is disabled")
+                    send_layout_change_signal("off")
                 else:
                     meta_layout = True
                     print("meta_layout is enabled")
+                    send_layout_change_signal("on")
                     meta_key_timestamp = datetime.datetime.now()
 
                     pressed_shift = False
