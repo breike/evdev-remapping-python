@@ -18,10 +18,27 @@
 
 
 # Import necessary libraries.
+import argparse
 import atexit
 import datetime
 # You need to install evdev with a package manager or pip3.
 import evdev  # (sudo pip3 install evdev)
+import tomllib
+
+configs = []
+
+
+def add_to_configs_list(path):
+    configs.append(path)
+
+
+argument_parser = argparse.ArgumentParser(prog="kekmapper",
+                                          description="Remapping on evdev")
+argument_parser.add_argument("-c", type=add_to_configs_list)
+argument_parser.parse_args()
+
+with open(configs[0], "rb") as f:
+    config = tomllib.load(f)
 
 # set keyboard to look for. Available options: 'akko', 'thinkpad'
 wanted_keyboard = 'thinkpad'
@@ -30,15 +47,16 @@ key_layout = 'colemak-wide-angle'
 # space layout timeout for autodisabling in second
 space_key_timeout = 3
 # meta layout timeout for autodisabling in seconds
-meta_key_timeout  = 3
+meta_key_timeout = 3
 
 
 # Define an example dictionary describing the remaps.
-REMAP_TABLE     = {}
-COLEMAK_TABLE   = {}
-SPACE_KEYS      = {}
-SHIFT_KEYS      = {}
-META_KEYS       = {}
+REMAP_TABLE = {}
+COLEMAK_TABLE = {}
+SPACE_KEYS = {}
+SHIFT_KEYS = {}
+META_KEYS = {}
+
 
 def send_layout_change_signal(signal):
     if wanted_keyboard == 'thinkpad':
