@@ -25,11 +25,14 @@ import datetime
 import evdev  # (sudo pip3 install evdev)
 import tomllib
 
-configs = []
+configs = {
+    "current_number": 0,
+    "list": []
+}
 
 
 def add_to_configs_list(path):
-    configs.append(path)
+    configs["list"].append(path)
 
 
 argument_parser = argparse.ArgumentParser(prog="kekmapper",
@@ -37,25 +40,8 @@ argument_parser = argparse.ArgumentParser(prog="kekmapper",
 argument_parser.add_argument("-c", type=add_to_configs_list)
 argument_parser.parse_args()
 
-with open(configs[0], "rb") as f:
+with open(configs["list"][configs["current_number"]], "rb") as f:
     config = tomllib.load(f)
-
-# set keyboard to look for. Available options: 'akko', 'thinkpad'
-wanted_keyboard = 'thinkpad'
-# 'qwerty' or 'colemak-wide-angle'
-key_layout = 'colemak-wide-angle'
-# space layout timeout for autodisabling in second
-space_key_timeout = 3
-# meta layout timeout for autodisabling in seconds
-meta_key_timeout = 3
-
-
-# Define an example dictionary describing the remaps.
-REMAP_TABLE = {}
-COLEMAK_TABLE = {}
-SPACE_KEYS = {}
-SHIFT_KEYS = {}
-META_KEYS = {}
 
 
 def send_layout_change_signal(signal):
@@ -69,259 +55,44 @@ def send_layout_change_signal(signal):
     else:
         pass
 
-if wanted_keyboard == 'akko':
-    REMAP_TABLE = {
-        # Let's swap A and B...
-        evdev.ecodes.KEY_CAPSLOCK: evdev.ecodes.KEY_WWW,
-        evdev.ecodes.KEY_TAB: evdev.ecodes.KEY_ESC,
-        evdev.ecodes.KEY_ESC: evdev.ecodes.KEY_GRAVE,
-        evdev.ecodes.KEY_GRAVE: evdev.ecodes.KEY_TAB,
-        #evdev.ecodes.KEY_SPACE: evdev.ecodes.KEY_MAIL,
-        #evdev.ecodes.KEY_LEFTMETA: evdev.ecodes.KEY_LEFTCTRL,
-        evdev.ecodes.KEY_LEFTCTRL: evdev.ecodes.KEY_LEFTMETA,
-        evdev.ecodes.KEY_1: evdev.ecodes.KEY_STOP,
-        evdev.ecodes.KEY_2: evdev.ecodes.KEY_STOP,
-        evdev.ecodes.KEY_3: evdev.ecodes.KEY_STOP,
-        evdev.ecodes.KEY_4: evdev.ecodes.KEY_SPACE,
-        evdev.ecodes.KEY_5: evdev.ecodes.KEY_STOP,
-        evdev.ecodes.KEY_6: evdev.ecodes.KEY_BACKSPACE,
-        evdev.ecodes.KEY_7: evdev.ecodes.KEY_STOP,
-        evdev.ecodes.KEY_8: evdev.ecodes.KEY_STOP,
-        evdev.ecodes.KEY_9: evdev.ecodes.KEY_STOP,
-        evdev.ecodes.KEY_0: evdev.ecodes.KEY_STOP,
-        evdev.ecodes.KEY_MINUS: evdev.ecodes.KEY_SPACE,
-        evdev.ecodes.KEY_EQUAL: evdev.ecodes.KEY_SPACE,
-    }
+def parse_config_maps(config):
+    maps = {}
 
-    if key_layout == 'colemak-wide-angle':
-        COLEMAK_TABLE = {
-            evdev.ecodes.KEY_1: evdev.ecodes.KEY_1,
-            evdev.ecodes.KEY_2: evdev.ecodes.KEY_2,
-            evdev.ecodes.KEY_3: evdev.ecodes.KEY_3,
-            evdev.ecodes.KEY_4: evdev.ecodes.KEY_4,
-            evdev.ecodes.KEY_5: evdev.ecodes.KEY_5,
-            evdev.ecodes.KEY_6: evdev.ecodes.KEY_6,
-            evdev.ecodes.KEY_7: evdev.ecodes.KEY_EQUAL,
-            evdev.ecodes.KEY_8: evdev.ecodes.KEY_7,
-            evdev.ecodes.KEY_9: evdev.ecodes.KEY_8,
-            evdev.ecodes.KEY_0: evdev.ecodes.KEY_9,
-            evdev.ecodes.KEY_MINUS: evdev.ecodes.KEY_0,
-            evdev.ecodes.KEY_EQUAL: evdev.ecodes.KEY_MINUS,
-            evdev.ecodes.KEY_Q: evdev.ecodes.KEY_Q,
-            evdev.ecodes.KEY_W: evdev.ecodes.KEY_W,
-            evdev.ecodes.KEY_E: evdev.ecodes.KEY_F,
-            evdev.ecodes.KEY_R: evdev.ecodes.KEY_P,
-            evdev.ecodes.KEY_T: evdev.ecodes.KEY_G,
-            evdev.ecodes.KEY_Y: evdev.ecodes.KEY_LEFTBRACE,
-            evdev.ecodes.KEY_U: evdev.ecodes.KEY_J,
-            evdev.ecodes.KEY_I: evdev.ecodes.KEY_L,
-            evdev.ecodes.KEY_O: evdev.ecodes.KEY_U,
-            evdev.ecodes.KEY_P: evdev.ecodes.KEY_Y,
-            evdev.ecodes.KEY_LEFTBRACE: evdev.ecodes.KEY_SEMICOLON,
-            evdev.ecodes.KEY_RIGHTBRACE: evdev.ecodes.KEY_APOSTROPHE,
-            evdev.ecodes.KEY_A: evdev.ecodes.KEY_A,
-            evdev.ecodes.KEY_S: evdev.ecodes.KEY_R,
-            evdev.ecodes.KEY_D: evdev.ecodes.KEY_S,
-            evdev.ecodes.KEY_F: evdev.ecodes.KEY_T,
-            evdev.ecodes.KEY_G: evdev.ecodes.KEY_D,
-            evdev.ecodes.KEY_H: evdev.ecodes.KEY_RIGHTBRACE,
-            evdev.ecodes.KEY_J: evdev.ecodes.KEY_H,
-            evdev.ecodes.KEY_K: evdev.ecodes.KEY_N,
-            evdev.ecodes.KEY_L: evdev.ecodes.KEY_E,
-            evdev.ecodes.KEY_SEMICOLON: evdev.ecodes.KEY_I,
-            evdev.ecodes.KEY_APOSTROPHE: evdev.ecodes.KEY_O,
-            evdev.ecodes.KEY_Z: evdev.ecodes.KEY_Z,
-            evdev.ecodes.KEY_X: evdev.ecodes.KEY_X,
-            evdev.ecodes.KEY_C: evdev.ecodes.KEY_C,
-            evdev.ecodes.KEY_V: evdev.ecodes.KEY_V,
-            evdev.ecodes.KEY_B: evdev.ecodes.KEY_B,
-            evdev.ecodes.KEY_N: evdev.ecodes.KEY_SLASH,
-            evdev.ecodes.KEY_M: evdev.ecodes.KEY_K,
-            evdev.ecodes.KEY_COMMA: evdev.ecodes.KEY_M,
-            evdev.ecodes.KEY_DOT: evdev.ecodes.KEY_COMMA,
-            evdev.ecodes.KEY_SLASH: evdev.ecodes.KEY_DOT,
-        }
+    for map in config['maps'].keys():
+        for hotkey in map:
+            
 
-    # mapping for space hotkeys (Space+Key, etc...)
-    SPACE_KEYS = {
-        # Space+Q to 1
-        evdev.ecodes.KEY_Q: evdev.ecodes.KEY_1,
-        # Space+W to 2
-        evdev.ecodes.KEY_W: evdev.ecodes.KEY_2,
-        # Space+E to 3
-        evdev.ecodes.KEY_E: evdev.ecodes.KEY_3,
-        # Space+R to 4
-        evdev.ecodes.KEY_R: evdev.ecodes.KEY_4,
-        # Space+A to 5
-        evdev.ecodes.KEY_A: evdev.ecodes.KEY_5,
-        # Space+S to 6
-        evdev.ecodes.KEY_S: evdev.ecodes.KEY_6,
-        # Space+D to 7
-        evdev.ecodes.KEY_D: evdev.ecodes.KEY_7,
-        # Space+F to 8
-        evdev.ecodes.KEY_F: evdev.ecodes.KEY_8,
-        # Space+Z to 9
-        evdev.ecodes.KEY_Z: evdev.ecodes.KEY_9,
-        # Space+X to 0
-        evdev.ecodes.KEY_X: evdev.ecodes.KEY_0,
-        # Space+C to minus
-        evdev.ecodes.KEY_C: evdev.ecodes.KEY_MINUS,
-        # Space+V to equal
-        evdev.ecodes.KEY_V: evdev.ecodes.KEY_EQUAL,
-        # Space+Caps Lock to mail key
-        evdev.ecodes.KEY_CAPSLOCK: evdev.ecodes.KEY_EJECTCD,
-    }
-
-    # mapping for shift hotkeys (Shift+Key, etc...)
-    SHIFT_KEYS = {
-        # force space key for shift hotkey (Shift+Space)
-        evdev.ecodes.KEY_SPACE: evdev.ecodes.KEY_SPACE,
-    }
-
-    # mapping for meta hotkeys (Meta+Key, etc...)
-    META_KEYS = {
-        # ESDF to arrow keys (as WASD)
-        evdev.ecodes.KEY_E: evdev.ecodes.KEY_UP,
-        evdev.ecodes.KEY_S: evdev.ecodes.KEY_LEFT,
-        evdev.ecodes.KEY_D: evdev.ecodes.KEY_DOWN,
-        evdev.ecodes.KEY_F: evdev.ecodes.KEY_RIGHT,
-        evdev.ecodes.KEY_SPACE: evdev.ecodes.KEY_LEFTCTRL,
-    }
-elif wanted_keyboard == 'thinkpad':
-    REMAP_TABLE = {
-        # Let's swap A and B...
-        evdev.ecodes.KEY_CAPSLOCK: evdev.ecodes.KEY_COMPUTER,
-        evdev.ecodes.KEY_TAB: evdev.ecodes.KEY_ESC,
-        evdev.ecodes.KEY_ESC:  evdev.ecodes.KEY_TAB,
-        #evdev.ecodes.KEY_GRAVE: evdev.ecodes.KEY_TAB,
-        #evdev.ecodes.KEY_SPACE: evdev.ecodes.KEY_MAIL,
-        evdev.ecodes.KEY_LEFTMETA: evdev.ecodes.KEY_LEFTCTRL,
-        evdev.ecodes.KEY_LEFTCTRL: evdev.ecodes.KEY_LEFTMETA,
-        evdev.ecodes.KEY_1: evdev.ecodes.KEY_STOP,
-        evdev.ecodes.KEY_2: evdev.ecodes.KEY_STOP,
-        evdev.ecodes.KEY_3: evdev.ecodes.KEY_STOP,
-        evdev.ecodes.KEY_4: evdev.ecodes.KEY_SPACE,
-        evdev.ecodes.KEY_5: evdev.ecodes.KEY_STOP,
-        evdev.ecodes.KEY_6: evdev.ecodes.KEY_BACKSPACE,
-        evdev.ecodes.KEY_7: evdev.ecodes.KEY_STOP,
-        evdev.ecodes.KEY_8: evdev.ecodes.KEY_STOP,
-        evdev.ecodes.KEY_9: evdev.ecodes.KEY_STOP,
-        evdev.ecodes.KEY_0: evdev.ecodes.KEY_STOP,
-        evdev.ecodes.KEY_MINUS: evdev.ecodes.KEY_SPACE,
-        evdev.ecodes.KEY_EQUAL: evdev.ecodes.KEY_SPACE,
-    }
-
-    if key_layout == 'colemak-wide-angle':
-        REMAP_TABLE[evdev.ecodes.KEY_1] = evdev.ecodes.KEY_1
-        REMAP_TABLE[evdev.ecodes.KEY_2] = evdev.ecodes.KEY_2
-        REMAP_TABLE[evdev.ecodes.KEY_3] = evdev.ecodes.KEY_3
-        REMAP_TABLE[evdev.ecodes.KEY_4] = evdev.ecodes.KEY_4
-        REMAP_TABLE[evdev.ecodes.KEY_5] = evdev.ecodes.KEY_5
-        REMAP_TABLE[evdev.ecodes.KEY_6] = evdev.ecodes.KEY_6
-        REMAP_TABLE[evdev.ecodes.KEY_7] = evdev.ecodes.KEY_EQUAL
-        REMAP_TABLE[evdev.ecodes.KEY_8] = evdev.ecodes.KEY_7
-        REMAP_TABLE[evdev.ecodes.KEY_9] = evdev.ecodes.KEY_8
-        REMAP_TABLE[evdev.ecodes.KEY_0] = evdev.ecodes.KEY_9
-        REMAP_TABLE[evdev.ecodes.KEY_MINUS] = evdev.ecodes.KEY_0
-        REMAP_TABLE[evdev.ecodes.KEY_EQUAL] = evdev.ecodes.KEY_MINUS
-        REMAP_TABLE[evdev.ecodes.KEY_Q] = evdev.ecodes.KEY_Q
-        REMAP_TABLE[evdev.ecodes.KEY_W] = evdev.ecodes.KEY_W
-        REMAP_TABLE[evdev.ecodes.KEY_E] = evdev.ecodes.KEY_F
-        REMAP_TABLE[evdev.ecodes.KEY_R] = evdev.ecodes.KEY_P
-        REMAP_TABLE[evdev.ecodes.KEY_T] = evdev.ecodes.KEY_G
-        REMAP_TABLE[evdev.ecodes.KEY_Y] = evdev.ecodes.KEY_LEFTBRACE
-        REMAP_TABLE[evdev.ecodes.KEY_U] = evdev.ecodes.KEY_J
-        REMAP_TABLE[evdev.ecodes.KEY_I] = evdev.ecodes.KEY_L
-        REMAP_TABLE[evdev.ecodes.KEY_O] = evdev.ecodes.KEY_U
-        REMAP_TABLE[evdev.ecodes.KEY_P] = evdev.ecodes.KEY_Y
-        REMAP_TABLE[evdev.ecodes.KEY_LEFTBRACE] = evdev.ecodes.KEY_SEMICOLON
-        REMAP_TABLE[evdev.ecodes.KEY_RIGHTBRACE] = evdev.ecodes.KEY_APOSTROPHE
-        REMAP_TABLE[evdev.ecodes.KEY_A] = evdev.ecodes.KEY_A
-        REMAP_TABLE[evdev.ecodes.KEY_S] = evdev.ecodes.KEY_R
-        REMAP_TABLE[evdev.ecodes.KEY_D] = evdev.ecodes.KEY_S
-        REMAP_TABLE[evdev.ecodes.KEY_F] = evdev.ecodes.KEY_T
-        REMAP_TABLE[evdev.ecodes.KEY_G] = evdev.ecodes.KEY_D
-        REMAP_TABLE[evdev.ecodes.KEY_H] = evdev.ecodes.KEY_RIGHTBRACE
-        REMAP_TABLE[evdev.ecodes.KEY_J] = evdev.ecodes.KEY_H
-        REMAP_TABLE[evdev.ecodes.KEY_K] = evdev.ecodes.KEY_N
-        REMAP_TABLE[evdev.ecodes.KEY_L] = evdev.ecodes.KEY_E
-        REMAP_TABLE[evdev.ecodes.KEY_SEMICOLON] = evdev.ecodes.KEY_I
-        REMAP_TABLE[evdev.ecodes.KEY_APOSTROPHE] = evdev.ecodes.KEY_O
-        REMAP_TABLE[evdev.ecodes.KEY_Z] = evdev.ecodes.KEY_Z
-        REMAP_TABLE[evdev.ecodes.KEY_X] = evdev.ecodes.KEY_X
-        REMAP_TABLE[evdev.ecodes.KEY_C] = evdev.ecodes.KEY_C
-        REMAP_TABLE[evdev.ecodes.KEY_V] = evdev.ecodes.KEY_V
-        REMAP_TABLE[evdev.ecodes.KEY_B] = evdev.ecodes.KEY_B
-        REMAP_TABLE[evdev.ecodes.KEY_N] = evdev.ecodes.KEY_SLASH
-        REMAP_TABLE[evdev.ecodes.KEY_M] = evdev.ecodes.KEY_K
-        REMAP_TABLE[evdev.ecodes.KEY_COMMA] = evdev.ecodes.KEY_M
-        REMAP_TABLE[evdev.ecodes.KEY_DOT] = evdev.ecodes.KEY_COMMA
-        REMAP_TABLE[evdev.ecodes.KEY_SLASH] = evdev.ecodes.KEY_DOT
-
-    # mapping for space hotkeys (Space+Key, etc...)
-    SPACE_KEYS = {
-        # Space+Q to 1
-        evdev.ecodes.KEY_Q: evdev.ecodes.KEY_1,
-        # Space+W to 2
-        evdev.ecodes.KEY_W: evdev.ecodes.KEY_2,
-        # Space+E to 3
-        evdev.ecodes.KEY_E: evdev.ecodes.KEY_3,
-        # Space+R to 4
-        evdev.ecodes.KEY_R: evdev.ecodes.KEY_4,
-        # Space+A to 5
-        evdev.ecodes.KEY_A: evdev.ecodes.KEY_5,
-        # Space+S to 6
-        evdev.ecodes.KEY_S: evdev.ecodes.KEY_6,
-        # Space+D to 7
-        evdev.ecodes.KEY_D: evdev.ecodes.KEY_7,
-        # Space+F to 8
-        evdev.ecodes.KEY_F: evdev.ecodes.KEY_8,
-        # Space+Z to 9
-        evdev.ecodes.KEY_Z: evdev.ecodes.KEY_9,
-        # Space+X to 0
-        evdev.ecodes.KEY_X: evdev.ecodes.KEY_0,
-        # Space+C to minus
-        evdev.ecodes.KEY_C: evdev.ecodes.KEY_MINUS,
-        # Space+V to equal
-        evdev.ecodes.KEY_V: evdev.ecodes.KEY_EQUAL,
-        # Space+Caps Lock to mail key
-        evdev.ecodes.KEY_CAPSLOCK: evdev.ecodes.KEY_MAIL,
-    }
-
-    # mapping for shift hotkeys (Shift+Key, etc...)
-    SHIFT_KEYS = {
-        # force space key for shift hotkey (Shift+Space)
-        evdev.ecodes.KEY_SPACE: evdev.ecodes.KEY_SPACE,
-    }
-
-    # mapping for meta hotkeys (Meta+Key, etc...)
-    META_KEYS = {
-        # ESDF to arrow keys (as WASD)
-        evdev.ecodes.KEY_E: evdev.ecodes.KEY_UP,
-        evdev.ecodes.KEY_S: evdev.ecodes.KEY_LEFT,
-        evdev.ecodes.KEY_D: evdev.ecodes.KEY_DOWN,
-        evdev.ecodes.KEY_F: evdev.ecodes.KEY_RIGHT,
-        evdev.ecodes.KEY_SPACE: evdev.ecodes.KEY_LEFTCTRL,
-    }
 
 # The names can be found with evtest or in evdev docs.
-
 # The keyboard name we will intercept the events for. Obtainable with evtest.
-MATCH = ""
-if wanted_keyboard == 'akko':
-    MATCH = 'Akko 2.4G Wireless Keyboard'
-elif wanted_keyboard == 'thinkpad':
-    MATCH = 'AT Translated Set 2 keyboard'
 
+MATCH = config["device"]["wantedKeyboard"]
 # Find all input devices.
 devices = [evdev.InputDevice(fn) for fn in evdev.list_devices()]
-# Limit the list to those containing MATCH and pick the first one.
-kbd = [d for d in devices if MATCH in d.name][0]
+if config["device"]["wantedIdType"] == "name":
+    # Limit the list to those containing MATCH and pick the first one.
+    kbd = [d for d in devices if MATCH in d.name][0]
+elif config["device"]["wantedIdType"] == "path":
+    kbd = [d for d in devices if MATCH in d.path][0]
+else:
+    print("Unknown device ID type: ",
+          config["device"]["wantedIdType"], "\n")
+    exit(1)
+
 atexit.register(kbd.ungrab)  # Don't forget to ungrab the keyboard on exit!
 kbd.grab()  # Grab, i.e. prevent the keyboard from emitting original events.
 
+flags = {
+    "current_layout": "base_map",
+    "current_level": 0,
+    "prssd_ctl": False,
+    "prssd_shift": False,
+    "soloing_spc": False # A flag needed for CapsLock example later.
+}
 
-soloing_spc   = False  # A flag needed for CapsLock example later.
+key_maps = parse_config_maps(config)
+
+soloing_spc   = False  
 pressed_ctrl  = False
 pressed_shift = False
 spc_layout    = False

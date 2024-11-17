@@ -1,0 +1,80 @@
+[device]
+## Device config for akko keyboard
+
+# Wanted type of device specification.
+#
+# Available options:
+#	- "name" - full name of device
+#	- "path" - full path of device
+wantedIdType = "path"
+
+# Full name or full path of keyboard
+# You can find out it by evtest
+wantedKeyboard = "/dev/input/event6"
+
+[controlKeys]
+## Key codes for mapping you can find out by evtest
+
+# Option that allow you make ctrl/alt key combinations
+# without holding ctrl key: press ctrl/alt, release,
+# press second key for key combination => ctrl/alt-key
+# combination
+leftCtrlKeyChording  = true
+rightCtrlKeyChording = false
+leftAltKeyChording   = false
+rightAltKeyChording  = false
+
+[maps]
+
+### Chord mapping syntax:
+###     [[key1, key2] keyToSend]
+
+
+base_map = [
+    ["KEY_CAPSLOCK", "KEY_WWW"],
+    ["KEY_TAB", "KEY_ESC"],
+    ["KEY_ESC", "KEY_GRAVE"],
+    ["KEY_GRAVE", "KEY_TAB"],
+    ["KEY_LEFTCTRL", "map:meta_map"],
+    ["KEY_LEFTMETA", "KEY_LEFTCTRL"],
+    [["KEY_LEFTSHIFT", "KEY_SPACE"], "map:shift_map"]]
+
+shift_map = [
+    ["KEY_CAPSLOCK", "KEY_WWW"],
+    ["KEY_TAB", "KEY_ESC"],
+    ["KEY_ESC", "KEY_GRAVE"],
+    ["KEY_GRAVE", "KEY_TAB"],
+    ["KEY_Q", "KEY_1"],
+    ["KEY_W", "KEY_2"],
+    ["KEY_E", "KEY_3"],
+    ["KEY_R", "KEY_4"],
+    ["KEY_A", "KEY_5"],
+    ["KEY_S", "KEY_6"],
+    ["KEY_D", "KEY_7"],
+    ["KEY_F", "KEY_8"],
+    ["KEY_Z", "KEY_9"],
+    ["KEY_X", "KEY_0"],
+    ["KEY_C", "KEY_MINUS"],
+    ["KEY_V", "KEY_EQUAL"],
+    ["KEY_1", "KEY_STOP"],
+    ["KEY_2", "KEY_STOP"],
+    ["KEY_3", "KEY_STOP"],
+    ["KEY_4", "KEY_SPACE"],
+    ["KEY_5", "KEY_STOP"],
+    ["KEY_6", "KEY_BACKSPACE"],
+    ["KEY_7", "KEY_STOP"],
+    ["KEY_8", "KEY_STOP"],
+    ["KEY_9", "KEY_STOP"],
+    ["KEY_0", "KEY_STOP"],
+    ["KEY_MINUS", "KEY_SPACE"],
+    ["KEY_EQUAL", "KEY_SPACE"]]
+
+meta_map = [
+    ["KEY_CAPSLOCK", "KEY_WWW"],
+    ["KEY_TAB", "KEY_ESC"],
+    ["KEY_ESC", "KEY_GRAVE"],
+    ["KEY_GRAVE", "KEY_TAB"],
+    ["KEY_E", "KEY_UP"],
+    ["KEY_S", "KEY_LEFT"],
+    ["KEY_D", "KEY_DOWN"],
+    ["KEY_F", "KEY_RIGHT"]]
