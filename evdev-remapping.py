@@ -59,9 +59,32 @@ def parse_config_maps(config):
     maps = {}
 
     for map in config['maps'].keys():
-        for hotkey in map:
-            
+        maps.update({map: {0: {}}})
 
+        layer_lvl = 0
+
+        for hotkey in config['maps'][map]:
+
+            # if first element of hotkey is list
+            if isinstance(hotkey[0], list):
+                maps[map][layer_lvl].update({hotkey[0][0]: 0})
+                if not (layer_lvl + 1) in maps[map]:
+                    maps[map].update({layer_lvl + 1: {}})
+            else:
+                maps[map][layer_lvl].update({hotkey[0]: hotkey[1]})
+
+        layer_lvl += 1
+
+#        while True:
+#            have_keys_on_layer = False
+#
+#            if not layer_lvl in maps[map]:
+#                maps[map].update({layer_lvl: {}})
+#
+#            for key in maps[map].keys():
+                
+
+    return maps
 
 # The names can be found with evtest or in evdev docs.
 # The keyboard name we will intercept the events for. Obtainable with evtest.
