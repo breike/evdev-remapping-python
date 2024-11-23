@@ -6,7 +6,7 @@
 # Available options:
 #	- "name" - full name of device
 #	- "path" - full path of device
-wantedIKEY_Dtype = "path"
+wantedIdType = "path"
 
 # Full name or full path of keyboard
 # You can find out it by evtest

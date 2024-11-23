@@ -23,6 +23,7 @@ import atexit
 import datetime
 # You need to install evdev with a package manager or pip3.
 import evdev  # (sudo pip3 install evdev)
+import pprint
 import tomllib
 
 configs = {
@@ -45,33 +46,39 @@ with open(configs["list"][configs["current_number"]], "rb") as f:
 
 
 def send_layout_change_signal(signal):
-    if wanted_keyboard == 'thinkpad':
-        f = open("/sys/class/leds/tpacpi::thinklight/brightness", "w")
-        if signal == "on":
-            f.write("1")
-        else:
-            f.write("0")
-        f.close()
+    f = open("/sys/class/leds/tpacpi::thinklight/brightness", "w")
+    if signal == "on":
+        f.write("1")
     else:
-        pass
+        f.write("0")
+    f.close()
 
 def parse_config_maps(config):
     maps = {}
 
     for map in config['maps'].keys():
-        maps.update({map: {0: {}}})
+        # map structure:
+        # {map: level: previous_level_key: old_key: new_key}
+        maps.update({map: {0: {0: {}}}})
 
         layer_lvl = 0
 
         for hotkey in config['maps'][map]:
-
             # if first element of hotkey is list
             if isinstance(hotkey[0], list):
+                while_counter = 0
+                prev_level_keys = []
+                current_level_oldkey = hotkey[0]
+
+                while isinstance(current_level_oldkey, list):
+                   if not layer_lvl in maps[map]:
+                       maps[map].update({layer_lvl: {}})
+
                 maps[map][layer_lvl].update({hotkey[0][0]: 0})
                 if not (layer_lvl + 1) in maps[map]:
                     maps[map].update({layer_lvl + 1: {}})
             else:
-                maps[map][layer_lvl].update({hotkey[0]: hotkey[1]})
+                maps[map][0][0].update({hotkey[0]: hotkey[1]})
 
         layer_lvl += 1
 
@@ -85,6 +92,10 @@ def parse_config_maps(config):
                 
 
     return maps
+
+pp = pprint.PrettyPrinter(width=41, compact=True)
+pp.pprint(parse_config_maps(config))
+exit(0)
 
 # The names can be found with evtest or in evdev docs.
 # The keyboard name we will intercept the events for. Obtainable with evtest.
