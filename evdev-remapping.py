@@ -59,26 +59,35 @@ def parse_config_maps(config):
     for map in config['maps'].keys():
         # map structure:
         # {map: level: previous_level_key: old_key: new_key}
-        maps.update({map: {0: {0: {}}}})
+        maps.update({map: {0: {}}})
 
         layer_lvl = 0
 
         for hotkey in config['maps'][map]:
             # if first element of hotkey is list
             if isinstance(hotkey[0], list):
-                while_counter = 0
-                prev_level_keys = []
-                current_level_oldkey = hotkey[0]
+                prev_lvl_key = ""
 
-                while isinstance(current_level_oldkey, list):
-                   if not layer_lvl in maps[map]:
-                       maps[map].update({layer_lvl: {}})
+                for index, key in enumerate(hotkey[0]):
+                    if index == 0:
+                        prev_lvl_key = key
+                    else:
+                        prev_lvl_key = prev_lvl_key + ", " + key
+
+                    if not layer_lvl in maps[map]:
+                        maps[map].update({layer_lvl: {}})
+
+                    maps[map][layer_lvl].update({prev_lvl_key: hotkey[1]})
+
+                    layer_lvl += 1
+
+                layer_lvl = 0
 
                 maps[map][layer_lvl].update({hotkey[0][0]: 0})
                 if not (layer_lvl + 1) in maps[map]:
                     maps[map].update({layer_lvl + 1: {}})
             else:
-                maps[map][0][0].update({hotkey[0]: hotkey[1]})
+                maps[map][0].update({hotkey[0]: hotkey[1]})
 
         layer_lvl += 1
 
@@ -89,7 +98,6 @@ def parse_config_maps(config):
 #                maps[map].update({layer_lvl: {}})
 #
 #            for key in maps[map].keys():
-                
 
     return maps
 
@@ -132,8 +140,10 @@ pressed_shift = False
 spc_layout    = False
 meta_layout   = False
 
-space_key_timestamp = datetime.datetime.now()  # timestamp for space hotkey for autodisabling space layout in some time
-meta_key_timestamp  = datetime.datetime.now()  # timestamp for meta hotkey for autodisabling meta layout in some time
+# timestamp for space hotkey for autodisabling space layout in some time
+space_key_timestamp = datetime.datetime.now()
+# timestamp for meta hotkey for autodisabling meta layout in some time
+meta_key_timestamp = datetime.datetime.now()
 
 # Create a new keyboard mimicking the original one.
 with evdev.UInput.from_device(kbd, name='kbdremap') as ui:
