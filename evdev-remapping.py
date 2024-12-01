@@ -129,16 +129,11 @@ flags = {
     "current_level": 0,
     "prssd_ctl": False,
     "prssd_shift": False,
-    "soloing_spc": False # A flag needed for CapsLock example later.
+    "soloing_spc": False, # A flag needed for CapsLock example later.
+    "prev_lvl_keys": []
 }
 
 key_maps = parse_config_maps(config)
-
-soloing_spc   = False  
-pressed_ctrl  = False
-pressed_shift = False
-spc_layout    = False
-meta_layout   = False
 
 # timestamp for space hotkey for autodisabling space layout in some time
 space_key_timestamp = datetime.datetime.now()
@@ -150,121 +145,14 @@ with evdev.UInput.from_device(kbd, name='kbdremap') as ui:
     remapped_code = False
     for ev in kbd.read_loop():  # Read events from original keyboard.
         if ev.type == evdev.ecodes.EV_KEY:  # Process key events.
+            pressed_key = ""
             # If we just pressed (or held) CapsLock, remember it.
             # Other keys will reset this flag.
             # Also, remap a 'solo CapsLock' into an Escape as promised.
-            soloing_spc = (ev.code == evdev.ecodes.KEY_SPACE and ev.value)
-
-            # opening Ctrl+Key hotkey for chord
-            if (pressed_ctrl and ev.value == 1 and ev.code != evdev.ecodes.KEY_LEFTMETA):
-                ui.write(evdev.ecodes.EV_KEY, evdev.ecodes.KEY_LEFTCTRL, 1)
-
-            if ev.code == evdev.ecodes.KEY_PAUSE and ev.value == 1:
-                # Exit on pressing PAUSE.
-                # Useful if that is your only keyboard. =)
-                # Also if you bind that script to PAUSE, it'll be a toggle.
-                break
-            elif (ev.code == evdev.ecodes.KEY_TAB) and (spc_layout or meta_layout):
-                spc_layout = False
-                meta_layout = False
-                send_layout_change_signal("off")
-            elif ev.code in REMAP_TABLE:
-                # Lookup the key we want to press/release instead...
-                remapped_code = REMAP_TABLE[ev.code]
-                # And do it.
-                ui.write(evdev.ecodes.EV_KEY, remapped_code, ev.value)
-            # if shift was pressed in previous time
-            #elif (pressed_shift and ev.code in SHIFT_KEYS):
-            #    # make shift hotkey
-            #    ui.write(evdev.ecodes.EV_KEY, SHIFT_KEYS[ev.code], ev.value)
-            #    # always send it because key can stuck if shift key released first
-            #    ui.write(evdev.ecodes.EV_KEY, SHIFT_KEYS[ev.code], 0)
-            # if space was pressed in previous time
-            elif (spc_layout and ev.code in SPACE_KEYS):
-                time_difference = datetime.datetime.now() - space_key_timestamp
-                # if time difference between now and entering space layout is less needed timeout
-                if (time_difference.total_seconds() < space_key_timeout):
-                    # make space hotkey
-                    ui.write(evdev.ecodes.EV_KEY, SPACE_KEYS[ev.code], ev.value)
-                    # update timer
-                    space_key_timestamp = datetime.datetime.now()
-                    send_layout_change_signal("on")
-                else:
-                    # else disable space layout and send default key
-                    ui.write(ev.type, ev.code, ev.value)
-                    spc_layout = False
-                    send_layout_change_signal("off")
-            elif (meta_layout and ev.code in META_KEYS):
-                time_difference = datetime.datetime.now() - meta_key_timestamp
-                # if time difference between now and entering meta layout is less needed timeout
-                if (time_difference.total_seconds() < meta_key_timeout):
-                    # make meta hotkey
-                    ui.write(evdev.ecodes.EV_KEY, META_KEYS[ev.code], ev.value)
-                    # update timer
-                    meta_key_timestamp = datetime.datetime.now()
-                else:
-                    # else disable meta layout and send default key
-                    ui.write(ev.type, ev.code, ev.value)
-                    meta_layout = False
-                    send_layout_change_signal("off")
-            # space layout works like a chord: if space key pressed and released,
-            # layout activates, if pressed again, deactivates
-            elif ev.code == evdev.ecodes.KEY_SPACE and pressed_shift:
-                if (ev.value > 0):
-                    if spc_layout == True:
-                        spc_layout = False
-                        send_layout_change_signal("off")
-                    else:
-                        spc_layout = True
-                        space_key_timestamp = datetime.datetime.now()
-                        send_layout_change_signal("on")
-
-                        pressed_shift = False
-                        meta_layout   = False
-            elif (key_layout == 'colemak-wide-angle' and  ev.code in COLEMAK_TABLE):
-                # Lookup the key we want to press/release instead...
-                remapped_code = COLEMAK_TABLE[ev.code]
-                # And do it.
-                ui.write(evdev.ecodes.EV_KEY, remapped_code, ev.value)
-            else:
-                # Passthrough other events unmodified (e.g. SYNs).
-                ui.write(ev.type, ev.code, ev.value)
-
-            if ev.code == evdev.ecodes.KEY_LEFTSHIFT:
-                if (ev.value > 0):
-                    pressed_shift = True
-                else:
-                    pressed_shift = False
-
-            # closing Ctrl+Key hotkey for chord
-            if (pressed_ctrl and ev.value == 0 and ev.code != evdev.ecodes.KEY_LEFTMETA):
-                ui.write(evdev.ecodes.EV_KEY, evdev.ecodes.KEY_LEFTCTRL, 0)
-                pressed_ctrl = False
-
-            if ev.code == evdev.ecodes.KEY_LEFTMETA and ev.value == 1:
-                if pressed_ctrl == False:
-                    pressed_ctrl = True
-                else:
-                    pressed_ctrl = False
+            if len(flags["prev_lvl_keys"]) > 0:
+               for key in flags["prev_lvl_keys"]: 
+                   if key != flags
+            
         else:
             # Passthrough other events unmodified (e.g. SYNs).
             ui.write(ev.type, ev.code, ev.value)
-
-
-
-        # meta layout works like a chord: if meta key pressed and released,
-        # layout activates, if pressed again or pressed escape, deactivates
-        if ev.code == evdev.ecodes.KEY_LEFTCTRL:
-            if (ev.value > 0):
-                if meta_layout == True:
-                    meta_layout = False
-                    print("meta_layout is disabled")
-                    send_layout_change_signal("off")
-                else:
-                    meta_layout = True
-                    print("meta_layout is enabled")
-                    send_layout_change_signal("on")
-                    meta_key_timestamp = datetime.datetime.now()
-
-                    pressed_shift = False
-                    spc_layout    = False
