@@ -101,9 +101,9 @@ def parse_config_maps(config):
 
     return maps
 
-pp = pprint.PrettyPrinter(width=41, compact=True)
-pp.pprint(parse_config_maps(config))
-exit(0)
+#pp = pprint.PrettyPrinter(width=41, compact=True)
+#pp.pprint(parse_config_maps(config))
+#exit(0)
 
 # The names can be found with evtest or in evdev docs.
 # The keyboard name we will intercept the events for. Obtainable with evtest.
@@ -141,7 +141,7 @@ space_key_timestamp = datetime.datetime.now()
 meta_key_timestamp = datetime.datetime.now()
 
 # Create a new keyboard mimicking the original one.
-with evdev.UInput.from_device(kbd, name='kbdremap') as ui:
+with evdev.UInput.from_device(kbd, name='kbdremap2') as ui:
     remapped_code = False
     for ev in kbd.read_loop():  # Read events from original keyboard.
         if ev.type == evdev.ecodes.EV_KEY:  # Process key events.
@@ -150,9 +150,47 @@ with evdev.UInput.from_device(kbd, name='kbdremap') as ui:
             # Other keys will reset this flag.
             # Also, remap a 'solo CapsLock' into an Escape as promised.
             if len(flags["prev_lvl_keys"]) > 0:
-               for key in flags["prev_lvl_keys"]: 
-                   if key != flags
-            
+                for key in flags["prev_lvl_keys"]:
+                    if key == flags["prev_lvl_keys"][0]:
+                        pressed_key = key
+                    elif (len(flags["prev_lvl_keys"]) == 1):
+                        pressed_key = key
+                    else:
+                        pressed_key = pressed_key + ", " + key
+
+                pressed_key = pressed_key + ", " + evdev.ecodes.KEY[ev.code]
+            else:
+                pressed_key = evdev.ecodes.KEY[ev.code]
+
+            if pressed_key in key_maps[flags["current_layout"]][flags["current_level"]]:
+                print("Key in config\n")
+                if key_maps[flags["current_layout"]][flags["current_level"]][pressed_key] == 0 and ev.value == 1:
+                    flags["current_level"] += 1
+                    flags["prev_lvl_keys"].append(evdev.ecodes.KEY[ev.code])
+                    print("Move to next level\n")
+                elif "map:" == key_maps[flags["current_layout"]][flags["current_level"]][pressed_key][0:4] and ev.value == 1:
+                    flags["current_layout"] = key_maps[flags["current_layout"]][flags["current_level"]][pressed_key][4:]
+                    flags["current_level"] = 0
+                    print("Move to another layout\n")
+                else:
+                    ui.write(ev.type, evdev.ecodes.ecodes[key_maps[flags["current_layout"]][flags["current_level"]][pressed_key]], ev.value)
+                    print("Sended key\n")
+            else:
+                flags["current_level"] = 0
+                flags["prev_lvl_keys"] = []
+                flags["current_layout"] = "base_map"
+                ui.write(ev.type, ev.code, ev.value)
+
+                print("Pressed key: " + pressed_key + "\n")
+                if pressed_key in key_maps[flags["current_layout"]][flags["current_level"]]:
+                    print("Final key: " + str(key_maps[flags["current_layout"]][flags["current_level"]][pressed_key]) + "\n")
+                print("current_layout: " + str(flags["current_layout"]) + "\n")
+                print("current_level: " + str(flags["current_level"]) + "\n")
+                print("prssd_ctl: " + str(flags["prssd_ctl"]) + "\n")
+                print("prssd_shift: " + str(flags["prssd_shift"]) + "\n")
+                print("soloing_spc: " + str(flags["soloing_spc"]) + "\n")
+                print("prev_lvl_keys: " + str(flags["prev_lvl_keys"]) + "\n")
+
         else:
             # Passthrough other events unmodified (e.g. SYNs).
             ui.write(ev.type, ev.code, ev.value)
